@@ -31,16 +31,10 @@ export type PredictionResponse = {
   reasons: string[];
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
 export async function predictCustomer(
   payload: CustomerInput
 ): Promise<PredictionResponse> {
-  if (!API_BASE_URL) {
-    throw new Error("NEXT_PUBLIC_API_BASE_URL is not set.");
-  }
-
-  const response = await fetch(`${API_BASE_URL}/predict`, {
+  const response = await fetch("/api/predict", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
