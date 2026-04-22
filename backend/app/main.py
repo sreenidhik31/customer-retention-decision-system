@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 from app.model_service import ChurnService
 from app.schemas import (
@@ -15,10 +16,8 @@ service = ChurnService()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://your-frontend-domain.vercel.app",
-    ],
+    allow_origins=["http://localhost:3000"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
