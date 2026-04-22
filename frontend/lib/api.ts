@@ -31,10 +31,16 @@ export type PredictionResponse = {
   reasons: string[];
 };
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 export async function predictCustomer(
   payload: CustomerInput
 ): Promise<PredictionResponse> {
-  const response = await fetch("http://127.0.0.1:8000/predict", {
+  if (!API_BASE_URL) {
+    throw new Error("NEXT_PUBLIC_API_BASE_URL is not set.");
+  }
+
+  const response = await fetch(`${API_BASE_URL}/predict`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -43,7 +49,8 @@ export async function predictCustomer(
   });
 
   if (!response.ok) {
-    throw new Error("Prediction request failed.");
+    const errorText = await response.text();
+    throw new Error(`Prediction request failed: ${errorText}`);
   }
 
   return response.json();
