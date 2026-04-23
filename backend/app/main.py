@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
 
 from app.model_service import ChurnService
 from app.schemas import (
@@ -16,11 +15,15 @@ service = ChurnService()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://customer-retention-decision-system.vercel.app",
+        "http://localhost:3000",
+    ],
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
