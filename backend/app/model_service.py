@@ -1,158 +1,112 @@
-from __future__ import annotations
-
-from pathlib import Path
-from typing import Any
-
 import joblib
-import pandas as pd
-
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-MODEL_PATH = BASE_DIR / "models" / "churn_model.joblib"
+import numpy as np
 
 
 class ChurnService:
-    def __init__(self, model_path: Path = MODEL_PATH) -> None:
-        if not model_path.exists():
-            raise FileNotFoundError(f"Model file not found: {model_path}")
-        self.pipeline = joblib.load(model_path)
+    def __init__(self):
+        # load your trained pipeline (adjust path if needed)
+        self.model = joblib.load("models/churn_model.joblib")
 
-    @staticmethod
-    def get_retention_decision(prob: float) -> tuple[str, str]:
-        if prob >= 0.75:
-            return "HIGH_RISK", "RETENTION_CALL"
-        if prob >= 0.45:
-            return "AT_RISK", "TARGETED_OFFER"
-        return "SAFE", "NO_ACTION"
+    def predict_one(self, data: dict):
+        """
+        Core decision engine:
+        - Predict probability
+        - Convert to risk segment
+        - Assign action
+        - Compute business metrics
+        """
 
-    @staticmethod
-    def estimate_retention_impact(row: pd.Series, action: str) -> tuple[float, float, float, float]:
-        monthly_charge = float(row.get("MonthlyCharges", 0.0))
+        # Convert input to model format
+        X = [data]
 
-        if action == "RETENTION_CALL":
-            intervention_cost = 20.0
-            expected_save = monthly_charge * 3.0
-        elif action == "TARGETED_OFFER":
-            intervention_cost = monthly_charge * 0.15
-            expected_save = monthly_charge * 2.0
+        # Get churn probability (class 1 = churn)
+        prob = float(self.model.predict_proba(X)[0][1])
+
+        # 🔥 ===== DECISION THRESHOLDS (THIS IS WHAT YOU WANTED) =====
+        if prob < 0.3:
+            segment = "SAFE"
+            priority = "LOW"
+            action = "NO_ACTION"
+            cost = 0
+
+        elif prob < 0.6:
+            segment = "AT_RISK"
+            priority = "MEDIUM"
+            action = "TARGETED_OFFER"
+            cost = 10  # small discount
+
         else:
-            intervention_cost = 0.0
-            expected_save = 0.0
+            segment = "HIGH_RISK"
+            priority = "HIGH"
+            action = "RETENTION_CALL"
+            cost = 25  # call + incentive
 
-        net_value = expected_save - intervention_cost
-        roi = (net_value / intervention_cost) if intervention_cost > 0 else 0.0
-        return intervention_cost, expected_save, net_value, roi
+        # 🔥 ===== BUSINESS LOGIC =====
+        monthly_revenue = data.get("MonthlyCharges", 0)
 
-    @staticmethod
-    def recommend_actions(row: pd.Series, churn_prob: float) -> list[str]:
-        actions: list[str] = []
+        # expected save depends on probability + intervention strength
+        expected_save = prob * monthly_revenue * 2  # 2 months retention impact
 
-        if churn_prob >= 0.60:
-            actions.append("Offer a 15–20% discount for 2–3 months.")
-        elif churn_prob >= 0.45:
-            actions.append("Offer a smaller incentive (5–10%) or loyalty add-on.")
+        net_value = expected_save - cost
 
-        if str(row.get("Contract", "")).lower().startswith("month"):
-            actions.append("Promote upgrade to a 1-year contract with a bundled deal.")
+        roi = (expected_save / cost) if cost > 0 else 0
 
-        if row.get("TechSupport", "") == "No":
-            actions.append("Provide a free Tech Support trial for 1 month.")
+        # 🔥 ===== OPTIONAL EXPLANATION (simple version) =====
+        reasons = []
 
-        if row.get("OnlineSecurity", "") == "No":
-            actions.append("Bundle Online Security add-on or free trial.")
+        if data.get("Contract") == "Month-to-month":
+            reasons.append("High churn risk due to flexible contract")
 
-        if row.get("InternetService", "") == "Fiber optic":
-            actions.append("Check service quality or outages and offer priority support.")
+        if data.get("TechSupport") == "No":
+            reasons.append("Lack of tech support increases churn risk")
 
-        if row.get("PaymentMethod", "") == "Electronic check":
-            actions.append("Encourage auto-pay with a small reward.")
+        if data.get("OnlineSecurity") == "No":
+            reasons.append("No online security → higher dissatisfaction")
 
-        if float(row.get("MonthlyCharges", 0.0)) > 80:
-            actions.append("Offer a plan review to reduce price friction.")
+        if data.get("tenure", 0) < 12:
+            reasons.append("Low tenure customers churn more frequently")
 
-        if not actions:
-            actions.append("Maintain standard engagement; no strong churn signals detected.")
+        if not reasons:
+            reasons.append("General behavioral risk pattern")
 
-        return actions
-
-    def predict_one(self, payload: dict[str, Any]) -> dict[str, Any]:
-        row_df = pd.DataFrame([payload])
-        prob = float(self.pipeline.predict_proba(row_df)[0, 1])
-
-        row = row_df.iloc[0]
-        risk_segment, recommended_action = self.get_retention_decision(prob)
-        intervention_cost, expected_save, net_value, roi = self.estimate_retention_impact(
-            row, recommended_action
-        )
-        reasons = self.recommend_actions(row, prob)
-
+        # 🔥 ===== FINAL OUTPUT =====
         return {
             "churn_probability": prob,
-            "risk_segment": risk_segment,
-            "recommended_action": recommended_action,
-            "intervention_cost": intervention_cost,
-            "expected_save": expected_save,
-            "net_value": net_value,
-            "roi": roi,
+            "risk_segment": segment,
+            "recommended_action": action,
+            "intervention_cost": cost,
+            "expected_save": round(expected_save, 2),
+            "net_value": round(net_value, 2),
+            "roi": round(roi, 2),
             "reasons": reasons,
         }
 
     def simulate_campaign(
         self,
-        customers: list[dict[str, Any]],
-        threshold: float,
-        retention_uplift: float,
-        discount_rate: float,
-    ) -> dict[str, Any]:
-        if not customers:
-            return {
-                "targeted_customers": 0,
-                "expected_retained": 0,
-                "gross_revenue_preserved": 0.0,
-                "offer_discount_cost": 0.0,
-                "intervention_cost_total": 0.0,
-                "estimated_net_impact": 0.0,
-                "estimated_roi": 0.0,
-            }
+        customers: list,
+        threshold: float = 0.5,
+        retention_uplift: float = 0.2,
+        discount_rate: float = 0.1,
+    ):
+        """
+        Batch campaign simulation (basic version)
+        """
 
-        df = pd.DataFrame(customers)
-        probs = self.pipeline.predict_proba(df)[:, 1]
-        df["churn_probability"] = probs
+        results = [self.predict_one(c) for c in customers]
 
-        targeted = df[df["churn_probability"] >= threshold].copy()
+        targeted = [r for r in results if r["churn_probability"] >= threshold]
 
-        if targeted.empty:
-            return {
-                "targeted_customers": 0,
-                "expected_retained": 0,
-                "gross_revenue_preserved": 0.0,
-                "offer_discount_cost": 0.0,
-                "intervention_cost_total": 0.0,
-                "estimated_net_impact": 0.0,
-                "estimated_roi": 0.0,
-            }
+        total_cost = sum(r["intervention_cost"] for r in targeted)
+        total_save = sum(r["expected_save"] for r in targeted)
 
-        intervention_cost_total = 0.0
-        for _, row in targeted.iterrows():
-            _, action = self.get_retention_decision(float(row["churn_probability"]))
-            cost, _, _, _ = self.estimate_retention_impact(row, action)
-            intervention_cost_total += cost
-
-        expected_retained = int(len(targeted) * retention_uplift)
-        gross_revenue_preserved = float(targeted["MonthlyCharges"].sum() * retention_uplift)
-        offer_discount_cost = float(targeted["MonthlyCharges"].sum() * retention_uplift * discount_rate)
-        estimated_net_impact = gross_revenue_preserved - offer_discount_cost - intervention_cost_total
-        estimated_roi = (
-            estimated_net_impact / intervention_cost_total
-            if intervention_cost_total > 0 else 0.0
-        )
+        net_value = total_save - total_cost
+        roi = (total_save / total_cost) if total_cost > 0 else 0
 
         return {
-            "targeted_customers": int(len(targeted)),
-            "expected_retained": expected_retained,
-            "gross_revenue_preserved": gross_revenue_preserved,
-            "offer_discount_cost": offer_discount_cost,
-            "intervention_cost_total": intervention_cost_total,
-            "estimated_net_impact": estimated_net_impact,
-            "estimated_roi": estimated_roi,
+            "total_customers": len(customers),
+            "targeted_customers": len(targeted),
+            "total_cost": round(total_cost, 2),
+            "total_expected_save": round(total_save, 2),
+            "net_value": round(net_value, 2),
+            "roi": round(roi, 2),
         }
