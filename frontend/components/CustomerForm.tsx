@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CustomerInput, predictCustomer, PredictionResponse } from "../lib/api";
+import {
+  CustomerInput,
+  PredictionResponse,
+  predictCustomer,
+} from "../lib/api";
 import ResultCard from "./ResultCard";
 
 const initialForm: CustomerInput = {
@@ -23,7 +27,7 @@ const initialForm: CustomerInput = {
   PaperlessBilling: "Yes",
   PaymentMethod: "Electronic check",
   MonthlyCharges: 89.5,
-  TotalCharges: 1074.0
+  TotalCharges: 1074.0,
 };
 
 export default function CustomerForm() {
@@ -32,7 +36,10 @@ export default function CustomerForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function updateField<K extends keyof CustomerInput>(key: K, value: CustomerInput[K]) {
+  function updateField<K extends keyof CustomerInput>(
+    key: K,
+    value: CustomerInput[K]
+  ) {
     setFormData((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -66,7 +73,10 @@ export default function CustomerForm() {
         <div className="form-grid">
           <div className="field">
             <label>Gender</label>
-            <select value={formData.gender} onChange={(e) => updateField("gender", e.target.value)}>
+            <select
+              value={formData.gender}
+              onChange={(e) => updateField("gender", e.target.value)}
+            >
               <option>Female</option>
               <option>Male</option>
             </select>
@@ -76,7 +86,9 @@ export default function CustomerForm() {
             <label>Senior Citizen</label>
             <select
               value={formData.SeniorCitizen}
-              onChange={(e) => updateField("SeniorCitizen", Number(e.target.value))}
+              onChange={(e) =>
+                updateField("SeniorCitizen", Number(e.target.value))
+              }
             >
               <option value={0}>0</option>
               <option value={1}>1</option>
@@ -94,7 +106,10 @@ export default function CustomerForm() {
 
           <div className="field">
             <label>Contract</label>
-            <select value={formData.Contract} onChange={(e) => updateField("Contract", e.target.value)}>
+            <select
+              value={formData.Contract}
+              onChange={(e) => updateField("Contract", e.target.value)}
+            >
               <option>Month-to-month</option>
               <option>One year</option>
               <option>Two year</option>
@@ -105,7 +120,9 @@ export default function CustomerForm() {
             <label>Internet Service</label>
             <select
               value={formData.InternetService}
-              onChange={(e) => updateField("InternetService", e.target.value)}
+              onChange={(e) =>
+                updateField("InternetService", e.target.value)
+              }
             >
               <option>DSL</option>
               <option>Fiber optic</option>
@@ -115,7 +132,10 @@ export default function CustomerForm() {
 
           <div className="field">
             <label>Tech Support</label>
-            <select value={formData.TechSupport} onChange={(e) => updateField("TechSupport", e.target.value)}>
+            <select
+              value={formData.TechSupport}
+              onChange={(e) => updateField("TechSupport", e.target.value)}
+            >
               <option>Yes</option>
               <option>No</option>
               <option>No internet service</option>
@@ -126,7 +146,9 @@ export default function CustomerForm() {
             <label>Online Security</label>
             <select
               value={formData.OnlineSecurity}
-              onChange={(e) => updateField("OnlineSecurity", e.target.value)}
+              onChange={(e) =>
+                updateField("OnlineSecurity", e.target.value)
+              }
             >
               <option>Yes</option>
               <option>No</option>
@@ -138,7 +160,9 @@ export default function CustomerForm() {
             <label>Payment Method</label>
             <select
               value={formData.PaymentMethod}
-              onChange={(e) => updateField("PaymentMethod", e.target.value)}
+              onChange={(e) =>
+                updateField("PaymentMethod", e.target.value)
+              }
             >
               <option>Electronic check</option>
               <option>Mailed check</option>
@@ -153,7 +177,9 @@ export default function CustomerForm() {
               type="number"
               step="0.01"
               value={formData.MonthlyCharges}
-              onChange={(e) => updateField("MonthlyCharges", Number(e.target.value))}
+              onChange={(e) =>
+                updateField("MonthlyCharges", Number(e.target.value))
+              }
             />
           </div>
 
@@ -163,7 +189,9 @@ export default function CustomerForm() {
               type="number"
               step="0.01"
               value={formData.TotalCharges}
-              onChange={(e) => updateField("TotalCharges", Number(e.target.value))}
+              onChange={(e) =>
+                updateField("TotalCharges", Number(e.target.value))
+              }
             />
           </div>
         </div>
