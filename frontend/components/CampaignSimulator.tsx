@@ -145,7 +145,7 @@ export default function CampaignSimulator({ customer }: Props) {
           disabled={loading}
           className="primary-btn"
         >
-          {loading ? "Simulating Strategy..." : "Run Strategy Simulation"}
+          {loading ? "Simulating Strategy..." : "Simulate Retention Strategy"}
         </button>
 
         {error && <p className="error-text">{error}</p>}
