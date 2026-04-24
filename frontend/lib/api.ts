@@ -31,6 +31,22 @@ export type PredictionResponse = {
   reasons: string[];
 };
 
+export type CampaignRequest = {
+  customers: CustomerInput[];
+  threshold: number;
+  retention_uplift: number;
+  discount_rate: number;
+};
+
+export type CampaignResponse = {
+  total_customers: number;
+  targeted_customers: number;
+  total_cost: number;
+  total_expected_save: number;
+  net_value: number;
+  roi: number;
+};
+
 export async function predictCustomer(
   payload: CustomerInput
 ): Promise<PredictionResponse> {
@@ -45,6 +61,25 @@ export async function predictCustomer(
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Prediction request failed: ${errorText}`);
+  }
+
+  return response.json();
+}
+
+export async function simulateCampaign(
+  payload: CampaignRequest
+): Promise<CampaignResponse> {
+  const response = await fetch("/api/campaign", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Campaign simulation failed: ${errorText}`);
   }
 
   return response.json();
