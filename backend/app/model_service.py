@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import joblib
-import pandas as pd
 from pathlib import Path
 from typing import Any
+
+import joblib
+import pandas as pd
 
 
 def get_risk_segment(prob: float) -> str:
     if prob < 0.3:
         return "SAFE"
-    elif prob < 0.6:
+    if prob < 0.6:
         return "AT_RISK"
     return "HIGH_RISK"
 
@@ -17,7 +18,7 @@ def get_risk_segment(prob: float) -> str:
 def get_retention_priority(prob: float) -> str:
     if prob < 0.3:
         return "LOW"
-    elif prob < 0.6:
+    if prob < 0.6:
         return "MEDIUM"
     return "HIGH"
 
@@ -25,7 +26,7 @@ def get_retention_priority(prob: float) -> str:
 def get_recommended_action(segment: str) -> str:
     if segment == "SAFE":
         return "NO_ACTION"
-    elif segment == "AT_RISK":
+    if segment == "AT_RISK":
         return "TARGETED_OFFER"
     return "RETENTION_CALL"
 
@@ -39,31 +40,25 @@ class ChurnService:
     def _make_input_df(self, data: dict[str, Any]) -> pd.DataFrame:
         return pd.DataFrame([data])
 
+    def _predict_prob(self, data: dict[str, Any]) -> float:
+        x = self._make_input_df(data)
+        return float(self.model.predict_proba(x)[0][1])
+
     def _build_reasons(self, data: dict[str, Any], prob: float) -> list[str]:
-        reasons: list[str] = []
+        reasons = []
 
         if data.get("Contract") == "Month-to-month":
             reasons.append("Flexible month-to-month contract increases churn risk.")
-        elif data.get("Contract") == "One year":
-            reasons.append("One-year contract provides moderate retention stability.")
-        elif data.get("Contract") == "Two year":
-            reasons.append("Longer contract term generally lowers churn risk.")
-
         if data.get("TechSupport") == "No":
             reasons.append("No tech support may reduce retention and satisfaction.")
-
         if data.get("OnlineSecurity") == "No":
             reasons.append("Lack of online security is associated with higher churn.")
-
         if data.get("InternetService") == "Fiber optic":
-            reasons.append("Fiber optic customers can be more price-sensitive in this segment.")
-
+            reasons.append("Fiber optic customers can be more price-sensitive.")
         if data.get("PaymentMethod") == "Electronic check":
             reasons.append("Electronic check customers often show higher churn patterns.")
-
         if float(data.get("tenure", 0) or 0) < 12:
             reasons.append("Short-tenure customers tend to churn more often.")
-
         if float(data.get("MonthlyCharges", 0) or 0) > 80:
             reasons.append("Higher monthly charges can increase cancellation risk.")
 
@@ -74,19 +69,10 @@ class ChurnService:
         else:
             reasons.append("Overall risk score suggests the customer is relatively stable.")
 
-        seen = set()
-        clean_reasons: list[str] = []
-
-        for reason in reasons:
-            if reason not in seen:
-                clean_reasons.append(reason)
-                seen.add(reason)
-
-        return clean_reasons[:6]
+        return reasons[:6]
 
     def predict_one(self, data: dict[str, Any]) -> dict[str, Any]:
-        x = self._make_input_df(data)
-        prob = float(self.model.predict_proba(x)[0][1])
+        prob = self._predict_prob(data)
 
         risk_segment = get_risk_segment(prob)
         retention_priority = get_retention_priority(prob)
@@ -109,8 +95,6 @@ class ChurnService:
         net_value = intervention_value
         roi = round(expected_save / intervention_cost, 2) if intervention_cost > 0 else 0.0
 
-        reasons = self._build_reasons(data, prob)
-
         return {
             "churn_probability": round(prob, 4),
             "risk_segment": risk_segment,
@@ -122,7 +106,7 @@ class ChurnService:
             "intervention_value": intervention_value,
             "net_value": net_value,
             "roi": roi,
-            "reasons": reasons,
+            "reasons": self._build_reasons(data, prob),
         }
 
     def simulate_campaign(
@@ -138,8 +122,7 @@ class ChurnService:
         total_expected_save = 0.0
 
         for customer in customers:
-            x = self._make_input_df(customer)
-            prob = float(self.model.predict_proba(x)[0][1])
+            prob = self._predict_prob(customer)
 
             if prob >= threshold:
                 targeted_customers += 1
