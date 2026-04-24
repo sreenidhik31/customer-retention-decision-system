@@ -23,9 +23,12 @@ export type CustomerInput = {
 export type PredictionResponse = {
   churn_probability: number;
   risk_segment: "SAFE" | "AT_RISK" | "HIGH_RISK";
+  retention_priority: "LOW" | "MEDIUM" | "HIGH";
   recommended_action: "NO_ACTION" | "TARGETED_OFFER" | "RETENTION_CALL";
   intervention_cost: number;
   expected_save: number;
+  baseline_loss: number;
+  intervention_value: number;
   net_value: number;
   roi: number;
   reasons: string[];

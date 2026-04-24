@@ -1,9 +1,4 @@
-from typing import List, Literal, Optional
-from pydantic import BaseModel, Field
-
-
-RiskSegment = Literal["SAFE", "AT_RISK", "HIGH_RISK"]
-RecommendedAction = Literal["NO_ACTION", "TARGETED_OFFER", "RETENTION_CALL"]
+from pydantic import BaseModel
 
 
 class CustomerInput(BaseModel):
@@ -11,7 +6,7 @@ class CustomerInput(BaseModel):
     SeniorCitizen: int
     Partner: str
     Dependents: str
-    tenure: int = Field(ge=0)
+    tenure: int
     PhoneService: str
     MultipleLines: str
     InternetService: str
@@ -24,37 +19,39 @@ class CustomerInput(BaseModel):
     Contract: str
     PaperlessBilling: str
     PaymentMethod: str
-    MonthlyCharges: float = Field(ge=0)
-    TotalCharges: float = Field(ge=0)
-
-
-class RetentionRecommendation(BaseModel):
-    churn_probability: float
-    risk_segment: RiskSegment
-    recommended_action: RecommendedAction
-    intervention_cost: float
-    expected_save: float
-    net_value: float
-    roi: float
-    reasons: List[str]
-
-
-class CampaignRequest(BaseModel):
-    customers: List[CustomerInput]
-    threshold: float = Field(ge=0.0, le=1.0, default=0.60)
-    retention_uplift: float = Field(ge=0.0, le=1.0, default=0.25)
-    discount_rate: float = Field(ge=0.0, le=1.0, default=0.20)
-
-
-class CampaignResponse(BaseModel):
-    targeted_customers: int
-    expected_retained: int
-    gross_revenue_preserved: float
-    offer_discount_cost: float
-    intervention_cost_total: float
-    estimated_net_impact: float
-    estimated_roi: float
+    MonthlyCharges: float
+    TotalCharges: float
 
 
 class HealthResponse(BaseModel):
     status: str
+
+
+class RetentionRecommendation(BaseModel):
+    churn_probability: float
+    risk_segment: str
+    retention_priority: str
+    recommended_action: str
+    intervention_cost: float
+    expected_save: float
+    baseline_loss: float
+    intervention_value: float
+    net_value: float
+    roi: float
+    reasons: list[str]
+
+
+class CampaignRequest(BaseModel):
+    customers: list[CustomerInput]
+    threshold: float = 0.5
+    retention_uplift: float = 0.2
+    discount_rate: float = 0.1
+
+
+class CampaignResponse(BaseModel):
+    total_customers: int
+    targeted_customers: int
+    total_cost: float
+    total_expected_save: float
+    net_value: float
+    roi: float

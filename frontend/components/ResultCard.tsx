@@ -10,64 +10,60 @@ export default function ResultCard({ result }: Props) {
   const prob = result.churn_probability;
   const percent = (prob * 100).toFixed(1);
 
-  let priority = "LOW";
-  let priorityColor = "#22c55e";
+  const priority = result.retention_priority;
 
-  if (prob > 0.7) {
-    priority = "HIGH";
-    priorityColor = "#ef4444";
-  } else if (prob > 0.4) {
-    priority = "MEDIUM";
-    priorityColor = "#f59e0b";
-  }
+  const priorityColor =
+    priority === "HIGH"
+      ? "#ef4444"
+      : priority === "MEDIUM"
+      ? "#f59e0b"
+      : "#22c55e";
 
-  let message = "";
-  if (prob > 0.7) {
-    message = "🚨 High churn risk — immediate action required";
-  } else if (prob > 0.4) {
-    message = "⚠️ Moderate risk — targeted intervention recommended";
-  } else {
-    message = "✅ Low risk — no immediate action needed";
-  }
+  const message =
+    priority === "HIGH"
+      ? "🚨 High churn risk — immediate retention action required"
+      : priority === "MEDIUM"
+      ? "⚠️ Moderate risk — targeted intervention recommended"
+      : "✅ Low risk — no immediate action needed";
+
+  const decisionText =
+    priority === "HIGH"
+      ? "This customer is in a high-risk churn zone. Retention action is economically justified based on projected value recovery."
+      : priority === "MEDIUM"
+      ? "This customer shows meaningful churn risk. A targeted offer can reduce revenue loss while keeping intervention cost controlled."
+      : "This customer is currently stable. No immediate intervention is economically required.";
 
   const displayAction =
     result.recommended_action === "NO_ACTION"
       ? "Monitor Customer"
       : formatText(result.recommended_action);
 
+  const showMoney = (value: number) => (value > 0 ? `$${value.toFixed(0)}` : "—");
+  const showRoi = (value: number) => (value > 0 ? `${value.toFixed(2)}x` : "—");
+
   return (
     <section
       style={{
         marginTop: "2rem",
         padding: "1.5rem",
-        borderRadius: "16px",
+        borderRadius: "20px",
         background: "white",
         boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
         maxWidth: "900px",
         marginLeft: "auto",
-        marginRight: "auto"
+        marginRight: "auto",
       }}
     >
-      <p
-        style={{
-          margin: 0,
-          fontSize: "0.8rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: "#3b82f6",
-          fontWeight: 700
-        }}
-      >
-        Decision Output
-      </p>
+      <p className="eyebrow">Decision Output</p>
 
-      <h2 style={{ marginTop: "6px" }}>Prediction Result</h2>
+      <h2 style={{ marginTop: "6px" }}>Retention Decision Summary</h2>
 
       <div style={{ marginTop: "1.2rem" }}>
-        <p style={{ marginBottom: "4px", fontWeight: 600 }}>
+        <p style={{ marginBottom: "4px", fontWeight: 700 }}>
           Churn Probability Gauge
         </p>
-        <p style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700 }}>
+
+        <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800 }}>
           {percent}%
         </p>
 
@@ -77,7 +73,7 @@ export default function ResultCard({ result }: Props) {
             borderRadius: "999px",
             background: "#e5e7eb",
             marginTop: "8px",
-            overflow: "hidden"
+            overflow: "hidden",
           }}
         >
           <div
@@ -86,7 +82,7 @@ export default function ResultCard({ result }: Props) {
               height: "100%",
               borderRadius: "999px",
               background:
-                "linear-gradient(90deg, #22c55e, #eab308, #ef4444)"
+                "linear-gradient(90deg, #22c55e, #eab308, #ef4444)",
             }}
           />
         </div>
@@ -97,7 +93,7 @@ export default function ResultCard({ result }: Props) {
             justifyContent: "space-between",
             fontSize: "0.8rem",
             marginTop: "6px",
-            color: "#6b7280"
+            color: "#64748b",
           }}
         >
           <span>Low Risk</span>
@@ -105,7 +101,9 @@ export default function ResultCard({ result }: Props) {
           <span>High Risk</span>
         </div>
 
-        <p style={{ marginTop: "10px", color: "#6b7280" }}>{message}</p>
+        <p style={{ marginTop: "12px", color: "#475569", fontWeight: 600 }}>
+          {message}
+        </p>
       </div>
 
       <div
@@ -113,96 +111,37 @@ export default function ResultCard({ result }: Props) {
           display: "grid",
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: "16px",
-          marginTop: "1.5rem"
+          marginTop: "1.5rem",
         }}
       >
-        <Card
-          title="Retention Priority"
+        <MetricCard
+          label="Retention Priority"
           value={priority}
           color={priorityColor}
           highlight
         />
-        <Card title="Segment" value={formatText(result.risk_segment)} />
-        <Card
-          title="ROI"
-          value={result.roi > 0 ? `${result.roi.toFixed(2)}x` : "—"}
-        />
+        <MetricCard label="Risk Segment" value={formatText(result.risk_segment)} />
+        <MetricCard label="Projected ROI" value={showRoi(result.roi)} />
 
-        <Card
-          title="Net Value"
-          value={result.net_value > 0 ? `$${result.net_value.toFixed(0)}` : "—"}
-        />
-        <Card
-          title="Expected Save"
-          value={
-            result.expected_save > 0
-              ? `$${result.expected_save.toFixed(0)}`
-              : "—"
-          }
-        />
-        <Card
-          title="Cost"
-          value={
-            result.intervention_cost > 0
-              ? `$${result.intervention_cost.toFixed(0)}`
-              : "—"
-          }
-        />
+        <MetricCard label="Loss Without Action" value={showMoney(result.baseline_loss)} />
+        <MetricCard label="Value With Action" value={showMoney(result.intervention_value)} />
+        <MetricCard label="Expected Save" value={showMoney(result.expected_save)} />
+
+        <MetricCard label="Net Value" value={showMoney(result.net_value)} />
+        <MetricCard label="Intervention Cost" value={showMoney(result.intervention_cost)} />
       </div>
 
-      <div
-        style={{
-          marginTop: "1.5rem",
-          padding: "1rem",
-          borderRadius: "12px",
-          background: "rgba(59, 130, 246, 0.08)",
-          border: "1px solid rgba(59, 130, 246, 0.2)"
-        }}
-      >
-        <strong>💡 Business Insight</strong>
-        <p style={{ marginTop: "6px", color: "#374151" }}>
-          {prob > 0.7
-            ? `This customer is in a high-risk churn zone. Estimated intervention value is about $${result.net_value.toFixed(
-                0
-              )} in net value with a projected ROI of ${result.roi.toFixed(2)}x.`
-            : prob > 0.4
-            ? `This customer shows meaningful churn risk. Estimated intervention value is about $${result.net_value.toFixed(
-                0
-              )} in net value with a projected ROI of ${result.roi.toFixed(2)}x.`
-            : "This customer currently appears relatively stable. No immediate intervention value is projected at this time."}
-        </p>
-      </div>
+      <InfoBox title="💡 Business Insight">{decisionText}</InfoBox>
 
-      <div
-        style={{
-          marginTop: "1.5rem",
-          padding: "1rem",
-          borderRadius: "12px",
-          background: "rgba(59, 130, 246, 0.08)",
-          border: "1px solid rgba(59, 130, 246, 0.2)"
-        }}
-      >
-        <p
-          style={{
-            margin: 0,
-            fontSize: "0.8rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: "#3b82f6",
-            fontWeight: 700
-          }}
-        >
-          Recommended Action
-        </p>
-
-        <h3 style={{ marginTop: "6px" }}>{displayAction}</h3>
-      </div>
+      <InfoBox title="🎯 Recommended Retention Action">
+        <strong>{displayAction}</strong>
+      </InfoBox>
 
       <div style={{ marginTop: "1.5rem" }}>
-        <h4>Next Steps</h4>
+        <h3>Decision Drivers</h3>
         <ul>
-          {result.reasons.map((r, i) => (
-            <li key={i}>{r}</li>
+          {result.reasons.map((reason, index) => (
+            <li key={index}>{reason}</li>
           ))}
         </ul>
       </div>
@@ -210,13 +149,13 @@ export default function ResultCard({ result }: Props) {
   );
 }
 
-function Card({
-  title,
+function MetricCard({
+  label,
   value,
   color,
-  highlight
+  highlight,
 }: {
-  title: string;
+  label: string;
   value: string;
   color?: string;
   highlight?: boolean;
@@ -224,23 +163,50 @@ function Card({
   return (
     <div
       style={{
-        padding: "14px",
-        borderRadius: "12px",
-        background: "white",
-        border: highlight ? `1px solid ${color}` : "1px solid #e5e7eb"
+        padding: "16px",
+        borderRadius: "14px",
+        background: "#ffffff",
+        border: highlight ? `1px solid ${color}` : "1px solid #e5e7eb",
       }}
     >
-      <p style={{ fontSize: "0.75rem", color: "#6b7280", margin: 0 }}>
-        {title}
-      </p>
-      <h3
+      <p
         style={{
-          marginTop: "6px",
-          color: color || "#111827"
+          margin: 0,
+          fontSize: "0.75rem",
+          color: "#64748b",
+          fontWeight: 800,
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
         }}
       >
-        {value}
-      </h3>
+        {label}
+      </p>
+      <h3 style={{ marginTop: "8px", color: color || "#111827" }}>{value}</h3>
+    </div>
+  );
+}
+
+function InfoBox({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        marginTop: "1.5rem",
+        padding: "1rem",
+        borderRadius: "14px",
+        background: "rgba(59, 130, 246, 0.08)",
+        border: "1px solid rgba(59, 130, 246, 0.2)",
+      }}
+    >
+      <h3 style={{ marginTop: 0 }}>{title}</h3>
+      <p style={{ marginBottom: 0, color: "#334155", lineHeight: 1.6 }}>
+        {children}
+      </p>
     </div>
   );
 }
