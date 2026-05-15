@@ -197,8 +197,3 @@ http://localhost:3000
 * Model monitoring and drift detection
 * Docker containerization
 
----
-
-# Skills Demonstrated
-
-Machine Learning, FastAPI, Next.js, TypeScript, REST APIs, Full-Stack ML Systems, Business Decision Modeling, Deployment Engineering, Real-Time Inference, Model Operationalization
